@@ -1,5 +1,9 @@
-import { action, autorun, computed, observable } from 'mobx';
-import { IViewport } from './MapModel';
+import { action, observable, reaction, runInAction } from 'mobx';
+import axios from 'axios';
+import { debounce } from 'throttle-debounce';
+
+import { IAPIBusStops, IBusStops, IViewport } from './MapModel';
+import { TRANSLINK_API } from './MapConstants';
 
 class MapStore {
     @observable
@@ -8,16 +12,41 @@ class MapStore {
         latitude: 49.2827,
         longitude: -123.1207,
         width: 400,
-        zoom: 8,
+        zoom: 15,
     };
+    @observable public busStops: IBusStops[] = [];
+    @observable public loading: boolean = false;
 
     constructor() {
-        autorun(() => console.log(this.viewport, this.size));
+        reaction(
+            () =>
+                this.viewport.latitude ||
+                this.viewport.longitude ||
+                this.viewport.zoom,
+            debounce(500, () => this.fetchBusStops()),
+        );
     }
 
-    @computed
-    get size(): { height: number; width: number } {
-        return { height: this.viewport.height, width: this.viewport.width };
+    @action
+    public async fetchBusStops() {
+        const { latitude, longitude, zoom } = this.viewport;
+
+        this.loading = true;
+        try {
+            const response = await axios.get(
+                TRANSLINK_API(
+                    round(latitude),
+                    round(longitude),
+                    calcRadius(zoom),
+                ),
+            );
+            runInAction(() => {
+                this.busStops = filterBusStops(response.data);
+                this.loading = false;
+            });
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     @action
@@ -30,6 +59,22 @@ class MapStore {
         this.viewport.height = window.innerHeight;
         this.viewport.width = window.innerWidth;
     }
+}
+
+function round(num: number) {
+    return parseFloat(num.toFixed(4));
+}
+
+function calcRadius(zoom: number) {
+    return -300 * Math.floor(zoom) + 5900;
+}
+
+function filterBusStops(responseData: IAPIBusStops[]) {
+    return responseData.map((busStop: IAPIBusStops) => ({
+        id: busStop.StopNo,
+        latitude: busStop.Latitude,
+        longitude: busStop.Longitude,
+    }));
 }
 
 const mapStore = new MapStore();

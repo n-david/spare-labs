@@ -1,9 +1,10 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import './index.css';
+import { Provider } from 'mobx-react';
 import registerServiceWorker from './registerServiceWorker';
 
-import { Provider } from 'mobx-react';
+import './index.css';
+
 import App from './components/App/App';
 import mapStore from './components/Map/MapStore';
 
