@@ -4,6 +4,6 @@ export const TRANSLINK_API = (
     longitude: number,
     radius: number,
 ) =>
-    `/RTTIAPI/V1/stops?apiKey=${
+    `${process.env.production ? 'api' : ''}/RTTIAPI/V1/stops?apiKey=${
         process.env.REACT_APP_TRANSLINK_TOKEN
     }&lat=${latitude}&long=${longitude}&Radius=${radius}`;

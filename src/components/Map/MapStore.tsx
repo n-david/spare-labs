@@ -45,6 +45,7 @@ class MapStore {
                 this.loading = false;
             });
         } catch (error) {
+            this.loading = false;
             console.error(error);
         }
     }
